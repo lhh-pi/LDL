@@ -8,45 +8,45 @@ datasets:
   test_1:
     name: Set5
     type: PairedImageDataset
-    dataroot_gt: datasets/Set5/HR
-    dataroot_lq: datasets/Set5/LR
+    dataroot_gt: datasets/Set5/GTmod12
+    dataroot_lq: datasets/Set5/LRbicx4
     io_backend:
       type: disk
-  test_2:
-    name: Set14
-    type: PairedImageDataset
-    dataroot_gt: datasets/Set14/HR
-    dataroot_lq: datasets/Set14/LR
-    io_backend:
-      type: disk
-  test_3:
-    name: Manga109
-    type: PairedImageDataset
-    dataroot_gt: datasets/Manga109/HR
-    dataroot_lq: datasets/Manga109/LR
-    io_backend:
-      type: disk
-  test_4:
-    name: General100
-    type: PairedImageDataset
-    dataroot_gt: datasets/General100/HR
-    dataroot_lq: datasets/General100/LR
-    io_backend:
-      type: disk
-  test_5:
-    name: Urban100
-    type: PairedImageDataset
-    dataroot_gt: datasets/Urban100/HR
-    dataroot_lq: datasets/Urban100/LR
-    io_backend:
-      type: disk
-  test_6:
-    name: DIV2K100
-    type: PairedImageDataset
-    dataroot_gt: datasets/DIV2K100/HR
-    dataroot_lq: datasets/DIV2K100/LR
-    io_backend:
-      type: disk
+#  test_2:
+#    name: Set14
+#    type: PairedImageDataset
+#    dataroot_gt: datasets/Set14/HR
+#    dataroot_lq: datasets/Set14/LR
+#    io_backend:
+#      type: disk
+#  test_3:
+#    name: Manga109
+#    type: PairedImageDataset
+#    dataroot_gt: datasets/Manga109/HR
+#    dataroot_lq: datasets/Manga109/LR
+#    io_backend:
+#      type: disk
+#  test_4:
+#    name: General100
+#    type: PairedImageDataset
+#    dataroot_gt: datasets/General100/HR
+#    dataroot_lq: datasets/General100/LR
+#    io_backend:
+#      type: disk
+#  test_5:
+#    name: Urban100
+#    type: PairedImageDataset
+#    dataroot_gt: datasets/Urban100/HR
+#    dataroot_lq: datasets/Urban100/LR
+#    io_backend:
+#      type: disk
+#  test_6:
+#    name: DIV2K100
+#    type: PairedImageDataset
+#    dataroot_gt: datasets/DIV2K100/HR
+#    dataroot_lq: datasets/DIV2K100/LR
+#    io_backend:
+#      type: disk
 
 network_g:
   type: RRDBNet
@@ -103,5 +103,5 @@ val:
       test_y_channel: true
 
 
-#PYTHONPATH="./:${PYTHONPATH}" CUDA_VISIBLE_DEVICES=0 python basicsr/test.py -opt options/test/LDL/test_LDL_Synthetic_x4.yml
-#PYTHONPATH="./:${PYTHONPATH}" OMP_NUM_THREADS=1 CUDA_VISIBLE_DEVICES=0 python basicsr/test.py -opt options/test/LDL/test_LDL_Synthetic_x4.yml
+#PYTHONPATH="./:${PYTHONPATH}" CUDA_VISIBLE_DEVICES=0 python basicsr/mytest.py -opt options/test/LDL/test_LDL_Synthetic_x4.yml
+#PYTHONPATH="./:${PYTHONPATH}" OMP_NUM_THREADS=1 CUDA_VISIBLE_DEVICES=0 python basicsr/mytest.py -opt options/test/LDL/test_LDL_Synthetic_x4.yml
