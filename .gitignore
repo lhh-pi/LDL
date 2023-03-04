@@ -53,3 +53,4 @@ datasets
 basicsr.egg-info/
 results/
 tb_logger/
+*version.py

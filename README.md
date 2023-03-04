@@ -69,12 +69,12 @@ First, check and adapt the yml file ```options/test/LDL/test_LDL_Synthetic_x4.ym
 
 - Calculate metrics and save visual results for synthetic tasks:
 ```bash
-PYTHONPATH="./:${PYTHONPATH}" CUDA_VISIBLE_DEVICES=0 python basicsr/mytest.py -opt options/test/LDL/test_LDL_Synthetic_x4.yml
+PYTHONPATH="./:${PYTHONPATH}" CUDA_VISIBLE_DEVICES=0 python basicsr/test.py -opt options/test/LDL/test_LDL_Synthetic_x4.yml
 ```
 
 - Save visual results for real-world image super-resolution:
 ```bash
-PYTHONPATH="./:${PYTHONPATH}" CUDA_VISIBLE_DEVICES=0 python basicsr/mytest.py -opt options/test/LDL/test_LDL_Realworld_x4.yml
+PYTHONPATH="./:${PYTHONPATH}" CUDA_VISIBLE_DEVICES=0 python basicsr/test.py -opt options/test/LDL/test_LDL_Realworld_x4.yml
 ```
 
 Evaluating files (logs and visualizations) will be saved in the directory ```./results/{name}```

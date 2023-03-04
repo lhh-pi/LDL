@@ -56,5 +56,5 @@ val:
   suffix: ~  # add suffix to saved images, if None, use exp name
 
 
-#PYTHONPATH="./:${PYTHONPATH}" CUDA_VISIBLE_DEVICES=0 python basicsr/mytest.py -opt options/test/LDL/test_LDL_Realworld_x4.yml
-#PYTHONPATH="./:${PYTHONPATH}" OMP_NUM_THREADS=1 CUDA_VISIBLE_DEVICES=0 python basicsr/mytest.py -opt options/test/LDL/test_LDL_Realworld_x4.yml
+#PYTHONPATH="./:${PYTHONPATH}" CUDA_VISIBLE_DEVICES=0 python basicsr/test.py -opt options/test/LDL/test_LDL_Realworld_x4.yml
+#PYTHONPATH="./:${PYTHONPATH}" OMP_NUM_THREADS=1 CUDA_VISIBLE_DEVICES=0 python basicsr/test.py -opt options/test/LDL/test_LDL_Realworld_x4.yml

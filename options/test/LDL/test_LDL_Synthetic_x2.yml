@@ -103,5 +103,5 @@ val:
       test_y_channel: true
 
 
-#PYTHONPATH="./:${PYTHONPATH}" CUDA_VISIBLE_DEVICES=0 python basicsr/mytest.py -opt options/test/LDL/test_LDL_Synthetic_x2.yml
-#PYTHONPATH="./:${PYTHONPATH}" OMP_NUM_THREADS=1 CUDA_VISIBLE_DEVICES=0 python basicsr/mytest.py -opt options/test/LDL/test_LDL_Synthetic_x2.yml
+#PYTHONPATH="./:${PYTHONPATH}" CUDA_VISIBLE_DEVICES=0 python basicsr/test.py -opt options/test/LDL/test_LDL_Synthetic_x2.yml
+#PYTHONPATH="./:${PYTHONPATH}" OMP_NUM_THREADS=1 CUDA_VISIBLE_DEVICES=0 python basicsr/test.py -opt options/test/LDL/test_LDL_Synthetic_x2.yml
