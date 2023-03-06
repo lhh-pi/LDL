@@ -24,6 +24,8 @@ __pycache__/
 *.tar
 *.zip
 
+experiments/train*
+
 # Logs and databases #
 ######################
 *.log
