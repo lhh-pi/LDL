@@ -26,18 +26,18 @@ class ESRGANArtifactsDisModel(SRGANModel):
             if self.cri_pix:
                 l_g_pix = self.cri_pix(self.output, self.gt)
                 l_g_total += l_g_pix
-                loss_dict['l_g_pix'] = l_g_pix
+                loss_dict['l_g_pix'] = l_g_pix  # l_g_pix: 生成SR的像素（L1）损失
             if self.cri_artifacts:
                 pixel_weight = get_refined_artifact_map(self.gt, self.output, self.output_ema, 7)
                 l_g_artifacts = self.cri_artifacts(torch.mul(pixel_weight, self.output), torch.mul(pixel_weight, self.gt))
                 l_g_total += l_g_artifacts
-                loss_dict['l_g_artifacts'] = l_g_artifacts
+                loss_dict['l_g_artifacts'] = l_g_artifacts  # l_g_artifacts: 伪影惩罚损失，L1损失
             # perceptual loss
             if self.cri_perceptual:
                 l_g_percep, l_g_style = self.cri_perceptual(self.output, self.gt)
                 if l_g_percep is not None:
                     l_g_total += l_g_percep
-                    loss_dict['l_g_percep'] = l_g_percep
+                    loss_dict['l_g_percep'] = l_g_percep  # l_g_percep：感知损失
                 if l_g_style is not None:
                     l_g_total += l_g_style
                     loss_dict['l_g_style'] = l_g_style
