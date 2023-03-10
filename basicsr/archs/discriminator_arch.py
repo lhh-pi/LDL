@@ -27,15 +27,18 @@ class Discriminator_PatchGAN(nn.Module):
 
         kw = 4
         padw = int(np.ceil((kw - 1.0) / 2))
-        sequence = [[self.use_spectral_norm(nn.Conv2d(input_nc, ndf, kernel_size=kw, stride=2, padding=padw), norm_type), nn.LeakyReLU(0.2, True)]]
+        sequence = [
+            [self.use_spectral_norm(nn.Conv2d(input_nc, ndf, kernel_size=kw, stride=2, padding=padw), norm_type),
+             nn.LeakyReLU(0.2, True)]]
 
         nf = ndf
         for n in range(1, n_layers):
             nf_prev = nf
             nf = min(nf * 2, 512)
-            sequence += [[self.use_spectral_norm(nn.Conv2d(nf_prev, nf, kernel_size=kw, stride=2, padding=padw), norm_type),
-                          norm_layer(nf),
-                          nn.LeakyReLU(0.2, True)]]
+            sequence += [
+                [self.use_spectral_norm(nn.Conv2d(nf_prev, nf, kernel_size=kw, stride=2, padding=padw), norm_type),
+                 norm_layer(nf),
+                 nn.LeakyReLU(0.2, True)]]
 
         nf_prev = nf
         nf = min(nf * 2, 512)
@@ -75,6 +78,7 @@ class Discriminator_PatchGAN(nn.Module):
 
     def forward(self, x):
         return self.model(x)
+
 
 @ARCH_REGISTRY.register()
 class VGGStyleDiscriminator128(nn.Module):
@@ -144,6 +148,7 @@ class VGGStyleDiscriminator128(nn.Module):
         out = self.linear2(feat)
         return out
 
+
 @ARCH_REGISTRY.register()
 class VGGStyleDiscriminator192(nn.Module):
     """VGG style discriminator with input size 192x192.
@@ -211,6 +216,7 @@ class VGGStyleDiscriminator192(nn.Module):
         feat = self.lrelu(self.linear1(feat))
         out = self.linear2(feat)
         return out
+
 
 @ARCH_REGISTRY.register()
 class VGGStyleDiscriminator256(nn.Module):
@@ -282,6 +288,84 @@ class VGGStyleDiscriminator256(nn.Module):
 
         feat = self.lrelu(self.bn5_0(self.conv5_0(feat)))
         feat = self.lrelu(self.bn5_1(self.conv5_1(feat)))  # output spatial size: (4, 4)
+
+        feat = feat.view(feat.size(0), -1)
+        feat = self.lrelu(self.linear1(feat))
+        out = self.linear2(feat)
+        return out
+
+
+@ARCH_REGISTRY.register()
+class VGGStyleDiscriminator_scale(nn.Module):
+    """VGG style discriminator with input size (48*scale) x (48*scale).
+
+    It is used to train SRGAN and ESRGAN.
+
+    Args:
+        num_in_ch (int): Channel number of inputs. Default: 3.
+        num_feat (int): Channel number of base intermediate features.
+            Default: 64.
+    """
+
+    def __init__(self, num_in_ch, num_feat, scale):
+        super(VGGStyleDiscriminator_scale, self).__init__()
+
+        self.scale = scale
+
+        # in: [in_chl, 48 * scale, 48 * scale]
+        self.conv0_0 = nn.Conv2d(num_in_ch, num_feat, 3, 1, 1, bias=True)
+        self.conv0_1 = nn.Conv2d(num_feat, num_feat, 4, scale, 1, bias=False)
+        self.bn0_1 = nn.BatchNorm2d(num_feat, affine=True)
+
+        # [nf, 48, 48]
+        self.conv1_0 = nn.Conv2d(num_feat, num_feat * 2, 3, 1, 1, bias=False)
+        self.bn1_0 = nn.BatchNorm2d(num_feat * 2, affine=True)
+        self.conv1_1 = nn.Conv2d(num_feat * 2, num_feat * 2, 4, 2, 1, bias=False)
+        self.bn1_1 = nn.BatchNorm2d(num_feat * 2, affine=True)
+
+        # [nf*2, 24, 24]
+        self.conv2_0 = nn.Conv2d(num_feat * 2, num_feat * 4, 3, 1, 1, bias=False)
+        self.bn2_0 = nn.BatchNorm2d(num_feat * 4, affine=True)
+        self.conv2_1 = nn.Conv2d(num_feat * 4, num_feat * 4, 4, 2, 1, bias=False)
+        self.bn2_1 = nn.BatchNorm2d(num_feat * 4, affine=True)
+
+        # [nf*4, 12, 12]
+        self.conv3_0 = nn.Conv2d(num_feat * 4, num_feat * 8, 3, 1, 1, bias=False)
+        self.bn3_0 = nn.BatchNorm2d(num_feat * 8, affine=True)
+        self.conv3_1 = nn.Conv2d(num_feat * 8, num_feat * 8, 4, 2, 1, bias=False)
+        self.bn3_1 = nn.BatchNorm2d(num_feat * 8, affine=True)
+
+        # [nf*8, 6, 6]
+        self.conv4_0 = nn.Conv2d(num_feat * 8, num_feat * 8, 3, 1, 1, bias=False)
+        self.bn4_0 = nn.BatchNorm2d(num_feat * 8, affine=True)
+        self.conv4_1 = nn.Conv2d(num_feat * 8, num_feat * 8, 4, 2, 1, bias=False)
+        self.bn4_1 = nn.BatchNorm2d(num_feat * 8, affine=True)
+
+        # [nf*8, 3, 3]
+        self.linear1 = nn.Linear(num_feat * 8 * 3 * 3, 100)
+        self.linear2 = nn.Linear(100, 1)
+
+        # activation function
+        self.lrelu = nn.LeakyReLU(negative_slope=0.2, inplace=True)
+
+    def forward(self, x):
+        assert x.size(2) == 48 * self.scale and x.size(3) == 48 * self.scale, (
+            f'Input spatial size must be {48 * self.scale}x{48 * self.scale}, but received {x.size()}.')
+
+        feat = self.lrelu(self.conv0_0(x))
+        feat = self.lrelu(self.bn0_1(self.conv0_1(feat)))  # output spatial size: (48, 48)
+
+        feat = self.lrelu(self.bn1_0(self.conv1_0(feat)))
+        feat = self.lrelu(self.bn1_1(self.conv1_1(feat)))  # output spatial size: (24, 24)
+
+        feat = self.lrelu(self.bn2_0(self.conv2_0(feat)))
+        feat = self.lrelu(self.bn2_1(self.conv2_1(feat)))  # output spatial size: (12, 12)
+
+        feat = self.lrelu(self.bn3_0(self.conv3_0(feat)))
+        feat = self.lrelu(self.bn3_1(self.conv3_1(feat)))  # output spatial size: (6, 6)
+
+        feat = self.lrelu(self.bn4_0(self.conv4_0(feat)))
+        feat = self.lrelu(self.bn4_1(self.conv4_1(feat)))  # output spatial size: (3, 3)
 
         feat = feat.view(feat.size(0), -1)
         feat = self.lrelu(self.linear1(feat))

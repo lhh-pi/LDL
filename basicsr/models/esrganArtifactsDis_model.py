@@ -28,7 +28,7 @@ class ESRGANArtifactsDisModel(SRGANModel):
                 l_g_total += l_g_pix
                 loss_dict['l_g_pix'] = l_g_pix  # l_g_pix: 生成SR的像素（L1）损失
             if self.cri_artifacts:
-                pixel_weight = get_refined_artifact_map(self.gt, self.output, self.output_ema, 7)
+                pixel_weight = get_refined_artifact_map(self.gt, self.output, self.output_ema, 7)  # 伪影惩罚系数：M_refine
                 l_g_artifacts = self.cri_artifacts(torch.mul(pixel_weight, self.output), torch.mul(pixel_weight, self.gt))
                 l_g_total += l_g_artifacts
                 loss_dict['l_g_artifacts'] = l_g_artifacts  # l_g_artifacts: 伪影惩罚损失，L1损失

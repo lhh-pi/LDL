@@ -1,7 +1,7 @@
 # general settings
-name: train_LDL_mapsr_RRDB
+name: train_LDL_mapSR
 model_type: ESRGANArtifactsDisModel
-scale: 4
+scale: &scale 2
 num_gpu: 1   # set num_gpu: 0 for cpu mode
 manual_seed: 0
 
@@ -11,18 +11,16 @@ datasets:
 #    name: DF2K
     name: map600
     type: PairedImageDataset
-#    dataroot_gt: datasets/DIV2K/DIV2K_train_HR_sub.lmdb
-#    dataroot_lq: datasets/DIV2K/DIV2K_train_LR_bicubic_X4_sub.lmdb
-#    dataroot_gt: datasets/DF2K/HRmod12_sub.lmdb
-#    dataroot_lq: datasets/DF2K/LRbicx4_sub.lmdb
-    dataroot_gt: datasets/map600/map_train_HR_sub
-    dataroot_lq: datasets/map600/map_train_LR_bicubic/X4_sub
+#    dataroot_gt: datasets/map600/map_train_HR_sub
+    dataroot_gt: datasets/map600/map_train_HR
+#    dataroot_lq: datasets/map600/map_train_LR_bicubic/X4_sub
+    dataroot_lq: datasets/map600/map_train_LR_bicubic/X3
     filename_tmpl: '{}'
     io_backend:
 #      type: lmdb
       type: disk
 
-    gt_size: 128
+    gt_size: &gt_size 144
     use_flip: true
     use_rot: true
 
@@ -30,7 +28,7 @@ datasets:
     use_shuffle: true
 #    num_worker_per_gpu: 12
     num_worker_per_gpu: 1
-    batch_size_per_gpu: 16
+    batch_size_per_gpu: 4
     dataset_enlarge_ratio: 100
     prefetch_mode: ~
 
@@ -48,27 +46,34 @@ datasets:
     name: map10
     type: PairedImageDataset
     dataroot_gt: datasets/map600/map10/gt
-    dataroot_lq: datasets/map600/map10/x4
+    dataroot_lq: datasets/map600/map10/x2
     io_backend:
       type: disk
 
 # network structures
 network_g:
-  type: RRDBNet
-  num_in_ch: 3
-  num_out_ch: 3
-  num_feat: 64
-  num_block: 23
+  type: MapSR
+  upscale: *scale
+  img_size: 48
+  window_size: 8
+  depths: [6, 6, 6, 6, 6, 6]
+  embed_dim: 180
+  num_heads: [6, 6, 6, 6, 6, 6]
+  mlp_ratio: 2
+  upsampler: 'pixelshuffle'
+  alpha: 0.1
 
 network_d:
-  type: VGGStyleDiscriminator128
+#  type: VGGStyleDiscriminator128
+  type: VGGStyleDiscriminator_scale
   num_in_ch: 3
   num_feat: 64
+  scale: *scale
 
 # path
 path:
-#  pretrain_network_g: experiments/pretrained_models/ESRGAN/ESRGAN_PSNR_SRx4_DF2K_official-150ff491.pth
-  pretrain_network_g: experiments/pretrained_models/net_g/net_g_DIV2K_RRDB+LDL.pth
+#  pretrain_network_g: experiments/pretrained_models/net_g/net_g_DIV2K_RRDB+LDL.pth
+  pretrain_network_g: ~
   param_key_g: params_ema
   strict_load_g: true
   resume_state: ~
@@ -88,6 +93,7 @@ train:
 
   scheduler:
     type: MultiStepLR
+#    type: CosineAnnealingRestartLR
     milestones: [300000]
     gamma: 1
 
@@ -132,20 +138,22 @@ train:
 
 # validation settings
 val:
-  val_freq: !!float 5e3
+#  val_freq: !!float 5e3
+  val_freq: !!float 200
   save_img: true
 
   metrics:
     psnr:
       type: calculate_psnr
-      crop_border: 4
+      crop_border: 3
       test_y_channel: true
 
 # logging settings
 logger:
   print_freq: 100
-  save_checkpoint_freq: !!float 5e3
-  use_tb_logger: true
+#  save_checkpoint_freq: !!float 5e3
+  save_checkpoint_freq: !!float 200
+  use_tb_logger: False
   wandb:
     project: ~
     resume_id: ~
