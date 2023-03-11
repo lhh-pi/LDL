@@ -1,3 +1,5 @@
+import os
+
 import torch
 from collections import OrderedDict
 
@@ -52,6 +54,11 @@ class SRGANModel(SRModel):
             self.cri_artifacts = build_loss(train_opt['artifacts_opt']).to(self.device)
         else:
             self.cri_artifacts = None
+
+        if train_opt.get('back_projection_opt'):
+            self.back_projection = build_loss(train_opt['back_projection_opt']).to(self.device)
+        else:
+            self.back_projection = None
 
         if train_opt.get('perceptual_opt'):
             self.cri_perceptual = build_loss(train_opt['perceptual_opt']).to(self.device)
@@ -137,7 +144,15 @@ class SRGANModel(SRModel):
         if self.ema_decay > 0:
             self.model_ema(decay=self.ema_decay)
 
-    def save(self, epoch, current_iter):
+    def save(self, epoch, current_iter, best=False):
+        if best:
+            save_filename = f'best_model_net_g_{current_iter}.pth'
+            save_path = os.path.join(self.opt['path']['models'], save_filename)
+            if hasattr(self, 'net_g_ema'):
+                torch.save({'params': self.net_g, 'params_ema': self.net_g_ema}, save_path)
+            else:
+                torch.save({'params': self.net_g}, save_path)
+            return
         if hasattr(self, 'net_g_ema'):
             self.save_network([self.net_g, self.net_g_ema], 'net_g', current_iter, param_key=['params', 'params_ema'])
         else:

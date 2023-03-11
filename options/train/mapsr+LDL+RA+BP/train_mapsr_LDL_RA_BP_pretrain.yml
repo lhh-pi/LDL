@@ -1,6 +1,6 @@
 # general settings
-name: train_LDL_mapSR
-model_type: ESRGANArtifactsDisModel
+name: train_MapSR_LDL_RA_BP_pretrain
+model_type: SRGAN_LDL_RA_BP
 scale: &scale 2
 num_gpu: 1   # set num_gpu: 0 for cpu mode
 manual_seed: 0
@@ -13,14 +13,14 @@ datasets:
     type: PairedImageDataset
 #    dataroot_gt: datasets/map600/map_train_HR_sub
     dataroot_gt: datasets/map600/map_train_HR
-#    dataroot_lq: datasets/map600/map_train_LR_bicubic/X4_sub
+#    dataroot_lq: datasets/map600/map_train_LR_bicubic/X2_sub
     dataroot_lq: datasets/map600/map_train_LR_bicubic/X2
     filename_tmpl: '{}'
     io_backend:
 #      type: lmdb
       type: disk
 
-    gt_size: &gt_size 144
+    gt_size: &gt_size 96
     use_flip: true
     use_rot: true
 
@@ -29,7 +29,8 @@ datasets:
 #    num_worker_per_gpu: 12
     num_worker_per_gpu: 1
     batch_size_per_gpu: 2
-    dataset_enlarge_ratio: 100
+#    dataset_enlarge_ratio: 100  # 数据扩充
+    dataset_enlarge_ratio: 20  # 数据扩充
     prefetch_mode: ~
 
 #  val:
@@ -61,10 +62,10 @@ network_g:
   num_heads: [6, 6, 6, 6, 6, 6]
   mlp_ratio: 2
   upsampler: 'pixelshuffle'
-  alpha: 0.1
+  alpha: 0.01
 
 network_d:
-#  type: VGGStyleDiscriminator128
+#  type: VGGStyleDiscriminator_scale
   type: VGGStyleDiscriminator_scale
   num_in_ch: 3
   num_feat: 64
@@ -72,8 +73,8 @@ network_d:
 
 # path
 path:
-#  pretrain_network_g: experiments/pretrained_models/net_g/net_g_DIV2K_RRDB+LDL.pth
-  pretrain_network_g: ~
+  pretrain_network_g: experiments/pretrained_models/net_g/mapsr_LDL_x2_pretrain.pth
+#  pretrain_network_g: ~
   param_key_g: params_ema
   strict_load_g: true
   resume_state: ~
@@ -92,14 +93,22 @@ train:
     betas: [0.9, 0.99]
 
   scheduler:
-    type: MultiStepLR
-#    type: CosineAnnealingRestartLR
-    milestones: [300000]
-    gamma: 1
+    type: CosineAnnealingRestartLR
+    periods: [50000, 50000, 100000, 100000]
+    restart_weights: [1, 0.5, 0.5, 0.25]
+    eta_min: !!float 1e-7
+#    type: MultiStepLR
+#    milestones: [300000]
+#    gamma: 1
 
-#  total_iter: 300000
-  total_iter: 3000
+  total_iter: 300000
+#  total_iter: 3000
   warmup_iter: -1  # no warm up
+
+  # region_aware
+  region_aware:
+    k_size: 11
+    std: 0.025
 
   # losses
   pixel_opt:
@@ -107,6 +116,10 @@ train:
     loss_weight: !!float 1e-2
     reduction: mean
   artifacts_opt:
+    type: L1Loss
+    loss_weight: !!float 1.0
+    reduction: mean
+  back_projection_opt:
     type: L1Loss
     loss_weight: !!float 1.0
     reduction: mean
@@ -138,21 +151,22 @@ train:
 
 # validation settings
 val:
-#  val_freq: !!float 5e3
-  val_freq: !!float 200
+  val_freq: &freq !!float 5e3
+#  val_freq: &freq !!float 10
   save_img: true
 
   metrics:
     psnr:
       type: calculate_psnr
-      crop_border: 3
+      crop_border: *scale
       test_y_channel: true
 
 # logging settings
 logger:
-  print_freq: 100
-#  save_checkpoint_freq: !!float 5e3
-  save_checkpoint_freq: !!float 200
+#  print_freq: 100
+  print_freq: 500
+  save_checkpoint_freq: *freq
+#  save_checkpoint_freq: *freq
   use_tb_logger: False
   wandb:
     project: ~

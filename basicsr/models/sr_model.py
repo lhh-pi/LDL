@@ -21,6 +21,8 @@ class SRModel(BaseModel):
         super(SRModel, self).__init__(opt)
 
         # define network
+        self.max_psnr = 0
+        self.best_model = False
         self.net_g = build_network(opt['network_g'])
         self.net_g = self.model_to_device(self.net_g)
         # self.print_network(self.net_g)
@@ -184,7 +186,15 @@ class SRModel(BaseModel):
             for metric in self.metric_results.keys():
                 self.metric_results[metric] /= (idx + 1)
 
+            self.best_model = False
+            if self.max_psnr < self.metric_results['psnr']:
+                self.max_psnr = self.metric_results['psnr']
+                self.best_model = True
+
             self._log_validation_metric_values(current_iter, dataset_name, tb_logger)
+
+    def get_best_model(self):
+        return self.best_model
 
     def _log_validation_metric_values(self, current_iter, dataset_name, tb_logger):
         log_str = f'Validation {dataset_name}\n'
