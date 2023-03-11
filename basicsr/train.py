@@ -174,14 +174,16 @@ def train_pipeline(root_path):
                 log_vars.update(model.get_current_log())
                 msg_logger(log_vars)
 
+            # validation
+            if opt.get('val') is not None and (current_iter % opt['val']['val_freq'] == 0):
+                model.validation(val_loader, current_iter, tb_logger, opt['val']['save_img'])
+                if model.get_best_model():
+                    model.save(epoch, current_iter, best=True)
+
             # save models and training states
             if current_iter % opt['logger']['save_checkpoint_freq'] == 0:
                 logger.info('Saving models and training states.')
                 model.save(epoch, current_iter)
-
-            # validation
-            if opt.get('val') is not None and (current_iter % opt['val']['val_freq'] == 0):
-                model.validation(val_loader, current_iter, tb_logger, opt['val']['save_img'])
 
             data_time = time.time()
             iter_time = time.time()
