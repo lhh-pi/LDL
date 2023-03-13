@@ -6,6 +6,7 @@ from scipy.special import gamma
 
 from basicsr.metrics.metric_util import reorder_image, to_y_channel
 from basicsr.utils.matlab_functions import imresize
+from basicsr.utils.registry import METRIC_REGISTRY
 
 
 def estimate_aggd_param(block):
@@ -138,6 +139,7 @@ def niqe(img, mu_pris_param, cov_pris_param, gaussian_window, block_size_h=96, b
     return quality
 
 
+@METRIC_REGISTRY.register()
 def calculate_niqe(img, crop_border, input_order='HWC', convert_to='y'):
     """Calculate NIQE (Natural Image Quality Evaluator) metric.
 
