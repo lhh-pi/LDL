@@ -21,6 +21,7 @@ class SRModel(BaseModel):
         super(SRModel, self).__init__(opt)
 
         # define network
+        self.max_psnr_iter = 0
         self.max_psnr = 0
         self.best_model = False
         self.net_g = build_network(opt['network_g'])
@@ -189,6 +190,7 @@ class SRModel(BaseModel):
             self.best_model = False
             if self.max_psnr < self.metric_results['psnr']:
                 self.max_psnr = self.metric_results['psnr']
+                self.max_psnr_iter = current_iter
                 self.best_model = True
 
             self._log_validation_metric_values(current_iter, dataset_name, tb_logger)
@@ -200,6 +202,7 @@ class SRModel(BaseModel):
         log_str = f'Validation {dataset_name}\n'
         for metric, value in self.metric_results.items():
             log_str += f'\t # {metric}: {value:.4f}\n'
+        log_str += f'\t # best_psnr: {self.max_psnr:.4f}, achieved at {self.max_psnr_iter} iteration\n'
         logger = get_root_logger()
         logger.info(log_str)
         if tb_logger:
