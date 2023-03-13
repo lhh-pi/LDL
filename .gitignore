@@ -56,3 +56,6 @@ basicsr.egg-info/
 results/
 tb_logger/
 *version.py
+
+# 配置文件
+*.yml
