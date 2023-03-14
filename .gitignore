@@ -46,6 +46,8 @@ Thumbs.db
 # saved models #
 ################
 *.pth
+*.state
+*.png
 
 # datasets #
 datasets
