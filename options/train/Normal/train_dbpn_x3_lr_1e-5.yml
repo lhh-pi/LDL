@@ -73,7 +73,7 @@ train:
 
   scheduler:
     type: CosineAnnealingRestartLR
-    periods: [5000, 5000, 10000, 10000]
+    periods: [5000, 5000, 10000, 10100]
     restart_weights: [1, 0.5, 0.5, 0.25]
     eta_min: !!float 0
 

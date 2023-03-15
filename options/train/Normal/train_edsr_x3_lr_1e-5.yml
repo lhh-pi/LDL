@@ -72,7 +72,7 @@ train:
 
   scheduler:
     type: CosineAnnealingRestartLR
-    periods: [5000, 5000, 10000, 10000]
+    periods: [5000, 5000, 10000, 10100]
     restart_weights: [1, 0.5, 0.5, 0.25]
     eta_min: !!float 0
 
@@ -90,8 +90,8 @@ train:
 
 # validation settings
 val:
-#  val_freq: &freq !!float 5e3
-  val_freq: &freq !!float 10
+  val_freq: &freq !!float 5e3
+#  val_freq: &freq !!float 10
   save_img: true
 
   metrics:
@@ -106,8 +106,8 @@ val:
 
 # logging settings
 logger:
-#  print_freq: 100
-  print_freq: *freq
+  print_freq: 100
+#  print_freq: *freq
   save_checkpoint_freq: *freq
   use_tb_logger: False
   wandb:
