@@ -1,0 +1,126 @@
+# general settings
+name: train_swinir_x3_lr_1e-5
+model_type: SRModel
+scale: &scale 3
+num_gpu: 1   # set num_gpu: 0 for cpu mode
+manual_seed: 0
+
+# dataset and data loader settings
+datasets:
+  train:
+    name: map600
+    type: PairedImageDataset
+#    dataroot_gt: datasets/map600/map_train_HR_sub
+    dataroot_gt: datasets/map600/map_train_HR
+#    dataroot_lq: datasets/map600/map_train_LR_bicubic/X2_sub
+    dataroot_lq: datasets/map600/map_train_LR_bicubic/X3
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+
+    gt_size: &gt_size 144
+    use_flip: true
+    use_rot: true
+
+    # data loader
+    use_shuffle: true
+#    num_worker_per_gpu: 12
+    num_worker_per_gpu: 1
+    batch_size_per_gpu: 2
+#    dataset_enlarge_ratio: 100  # 数据扩充
+    dataset_enlarge_ratio: 20  # 数据扩充
+    prefetch_mode: ~
+
+  val:
+    name: map10
+    type: PairedImageDataset
+    dataroot_gt: datasets/map600/map10/gt
+    dataroot_lq: datasets/map600/map10/X3
+    io_backend:
+      type: disk
+
+# network structures
+network_g:
+  type: SwinIR
+  upscale: *scale
+  img_size: 48
+  window_size: 8
+  depths: [6, 6, 6, 6]
+  embed_dim: 60
+  num_heads: [6, 6, 6, 6]
+  mlp_ratio: 2
+  upsampler: 'pixelshuffledirect'
+
+# path
+path:
+  pretrain_network_g: experiments/pretrained_models/net_g/swinir_x3_pretrain.pth
+#  pretrain_network_g: ~
+  param_key_g: params
+  strict_load_g: true
+  resume_state: ~
+
+# training settings
+train:
+  optim_g:
+    type: Adam
+#    lr: !!float 1e-4
+    lr: !!float 1e-5
+    weight_decay: 0
+    betas: [0.9, 0.99]
+  optim_d:
+    type: Adam
+    lr: !!float 1e-4
+    weight_decay: 0
+    betas: [0.9, 0.99]
+
+  scheduler:
+    type: CosineAnnealingRestartLR
+    periods: [5000, 5000, 10000, 10000]
+    restart_weights: [1, 0.5, 0.5, 0.25]
+    eta_min: !!float 0
+
+  total_iter: 30000
+#  total_iter: 3000
+#  warmup_iter: -1  # no warm up
+  warmup_iter: 100
+
+  # losses
+  pixel_opt:
+    type: L1Loss
+#    loss_weight: !!float 1e-2
+    loss_weight: !!float 1.0
+    reduction: mean
+
+# validation settings
+val:
+#  val_freq: &freq !!float 5e3
+  val_freq: &freq !!float 1000
+  save_img: true
+
+  metrics:
+    psnr:
+      type: calculate_psnr
+      crop_border: *scale
+      test_y_channel: true
+    ssim:
+      type: calculate_ssim
+      crop_border: *scale
+      test_y_channel: true
+
+# logging settings
+logger:
+  print_freq: 100
+#  print_freq: *freq
+  save_checkpoint_freq: *freq
+  use_tb_logger: False
+  wandb:
+    project: ~
+    resume_id: ~
+
+# dist training settings
+dist_params:
+  backend: nccl
+  port: 29500
+
+#PYTHONPATH="./:${PYTHONPATH}" CUDA_VISIBLE_DEVICES=0,1,2,3 python -m torch.distributed.launch --nproc_per_node=4 --master_port=5678 python basicsr/train.py -opt options/train/LDL/train_Synthetic_LDL.yml --launcher pytorch --auto_resume
+#PYTHONPATH="./:${PYTHONPATH}" CUDA_VISIBLE_DEVICES=0 python basicsr/train.py -opt options/train/LDL/train_Synthetic_LDL.yml --auto_resume
