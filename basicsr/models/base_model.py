@@ -9,7 +9,15 @@ from basicsr.models import lr_scheduler as lr_scheduler
 from basicsr.utils import get_root_logger
 from basicsr.utils.dist_util import master_only
 
+from os import path as osp
+from tqdm import tqdm
+from basicsr.archs import build_network
+from basicsr.metrics import calculate_metric
+from basicsr.utils import get_root_logger, imwrite, tensor2img
+from basicsr.utils.registry import MODEL_REGISTRY
 
+
+@MODEL_REGISTRY.register()
 class BaseModel():
     """Base model."""
 
@@ -20,14 +28,40 @@ class BaseModel():
         self.schedulers = []
         self.optimizers = []
 
+        self.net_g = build_network(opt['network_g'])
+        self.net_g = self.model_to_device(self.net_g)
+
+        # load pretrained models
+        load_path = self.opt['path'].get('pretrain_network_g', None)
+        load_key = self.opt['path'].get('param_key_g', None)
+        if load_path is not None:
+            self.load_network(self.net_g, load_path, self.opt['path'].get('strict_load_g', True), load_key)
+
     def feed_data(self, data):
-        pass
+        self.lq = data['lq'].to(self.device)
+        if 'gt' in data:
+            self.gt = data['gt'].to(self.device)
 
     def optimize_parameters(self):
         pass
 
     def get_current_visuals(self):
-        pass
+        out_dict = OrderedDict()
+        out_dict['lq'] = self.lq.detach().cpu()
+        out_dict['result'] = self.output.detach().cpu()
+        if hasattr(self, 'gt'):
+            out_dict['gt'] = self.gt.detach().cpu()
+        return out_dict
+
+    def _log_validation_metric_values(self, current_iter, dataset_name, tb_logger):
+        log_str = f'Validation {dataset_name}\n'
+        for metric, value in self.metric_results.items():
+            log_str += f'\t # {metric}: {value:.4f}\n'
+        logger = get_root_logger()
+        logger.info(log_str)
+        if tb_logger:
+            for metric, value in self.metric_results.items():
+                tb_logger.add_scalar(f'metrics/{metric}', value, current_iter)
 
     def save(self, epoch, current_iter):
         """Save networks and training state."""
@@ -46,6 +80,85 @@ class BaseModel():
             self.dist_validation(dataloader, current_iter, tb_logger, save_img)
         else:
             self.nondist_validation(dataloader, current_iter, tb_logger, save_img)
+
+    def test(self):
+        if hasattr(self, 'net_g_ema'):
+            self.net_g_ema.eval()
+            with torch.no_grad():
+                self.output = self.net_g_ema(self.lq)
+        else:
+            self.net_g.eval()
+            with torch.no_grad():
+                self.output = self.net_g(self.lq)
+            self.net_g.train()
+
+    def dist_validation(self, dataloader, current_iter, tb_logger, save_img):
+        if self.opt['rank'] == 0:
+            self.nondist_validation(dataloader, current_iter, tb_logger, save_img)
+
+    def nondist_validation(self, dataloader, current_iter, tb_logger, save_img):
+        dataset_name = dataloader.dataset.opt['name']
+        with_metrics = self.opt['val'].get('metrics') is not None
+        if with_metrics:
+            self.metric_results = {metric: 0 for metric in self.opt['val']['metrics'].keys()}
+        pbar = tqdm(total=len(dataloader), unit='image')
+
+        log_str = f"\n \t name"
+        for metric in self.metric_results:
+            log_str += f" \t {metric}"
+        log_str += '\n'
+
+        for idx, val_data in enumerate(dataloader):
+            img_name = osp.splitext(osp.basename(val_data['lq_path'][0]))[0]
+            self.feed_data(val_data)
+            self.test()
+
+            visuals = self.get_current_visuals()
+            sr_img = tensor2img([visuals['result']])
+            if 'gt' in visuals:
+                gt_img = tensor2img([visuals['gt']])
+                del self.gt
+
+            # tentative for out of GPU memory
+            del self.lq
+            del self.output
+            torch.cuda.empty_cache()
+
+            if save_img:
+                if self.opt['is_train']:
+                    save_img_path = osp.join(self.opt['path']['visualization'], str(current_iter),
+                                             f'{img_name}_{current_iter}.png')
+                else:
+                    if self.opt['val']['suffix']:
+                        save_img_path = osp.join(self.opt['path']['visualization'], dataset_name,
+                                                 f'{img_name}_{self.opt["val"]["suffix"]}.png')
+                    else:
+                        save_img_path = osp.join(self.opt['path']['visualization'], dataset_name,
+                                                 f'{img_name}_{self.opt["name"]}.png')
+                imwrite(sr_img, save_img_path)
+
+            log_str += f" \t{img_name}"
+
+            if with_metrics:
+                # calculate metrics
+                for name, opt_ in self.opt['val']['metrics'].items():
+                    metric_data = dict(img1=sr_img, img2=gt_img)
+                    metric_cur = calculate_metric(metric_data, opt_)
+                    log_str += f"\t{metric_cur:.4f}"
+                    self.metric_results[name] += metric_cur
+            log_str += "\n"
+            pbar.update(1)
+            pbar.set_description(f'Test {img_name}')
+        pbar.close()
+
+        logger = get_root_logger()
+        logger.info(log_str)
+
+        if with_metrics:
+            for metric in self.metric_results.keys():
+                self.metric_results[metric] /= (idx + 1)
+
+            self._log_validation_metric_values(current_iter, dataset_name, tb_logger)
 
     def model_ema(self, decay=0.999):
         net_g = self.get_bare_model(self.net_g)
