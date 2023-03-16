@@ -1,26 +1,24 @@
 # general settings
-name: train_mapsr_x3_LDL_RA_BP__pretrain_gan_1e-4_percep_2e-4_lr_1e-5
-model_type: SRGAN_LDL_RA_BP
-scale: &scale 3
+name: train_edsr_x2_lr_1e-5
+model_type: SRModel
+scale: &scale 2
 num_gpu: 1   # set num_gpu: 0 for cpu mode
 manual_seed: 0
 
 # dataset and data loader settings
 datasets:
   train:
-#    name: DF2K
     name: map600
     type: PairedImageDataset
 #    dataroot_gt: datasets/map600/map_train_HR_sub
     dataroot_gt: datasets/map600/map_train_HR
 #    dataroot_lq: datasets/map600/map_train_LR_bicubic/X2_sub
-    dataroot_lq: datasets/map600/map_train_LR_bicubic/X3
+    dataroot_lq: datasets/map600/map_train_LR_bicubic/X2
     filename_tmpl: '{}'
     io_backend:
-#      type: lmdb
       type: disk
 
-    gt_size: &gt_size 144
+    gt_size: &gt_size 96
     use_flip: true
     use_rot: true
 
@@ -33,49 +31,28 @@ datasets:
     dataset_enlarge_ratio: 20  # 数据扩充
     prefetch_mode: ~
 
-#  val:
-#    name: DIV2K100
-#    type: PairedImageDataset
-##    dataroot_gt: datasets/DIV2K100/HR
-##    dataroot_lq: datasets/DIV2K100/LR
-#    dataroot_gt: datasets/DIV2K/DIV2K_valid_HR
-#    dataroot_lq: datasets/DIV2K/DIV2K_valid_LR_bicubic/X4
-#    io_backend:
-#      type: disk
-
   val:
     name: map10
     type: PairedImageDataset
     dataroot_gt: datasets/map600/map10/gt
-    dataroot_lq: datasets/map600/map10/X3
+    dataroot_lq: datasets/map600/map10/X2
     io_backend:
       type: disk
 
 # network structures
 network_g:
-  type: MapSR
-  upscale: *scale
-  img_size: 48
-  window_size: 8
-  depths: [6, 6, 6, 6, 6, 6]
-  embed_dim: 180
-  num_heads: [6, 6, 6, 6, 6, 6]
-  mlp_ratio: 2
-  upsampler: 'pixelshuffle'
-  alpha: 0.01
-
-network_d:
-#  type: VGGStyleDiscriminator_scale
-  type: VGGStyleDiscriminator_scale
-  num_in_ch: 3
-  num_feat: 64
+  type: EDSR
+#  n_resblocks: 32
+#  n_feats: 256
+#  res_scale: 0.1
   scale: *scale
+
 
 # path
 path:
-  pretrain_network_g: experiments/pretrained_models/net_g/mapsr_LDL_x3_pretrain.pth
+  pretrain_network_g: experiments/pretrained_models/net_g/edsr_x2_pretrain.pth
 #  pretrain_network_g: ~
-  param_key_g: params_ema
+  param_key_g: params
   strict_load_g: true
   resume_state: ~
 
@@ -98,66 +75,23 @@ train:
     periods: [5000, 5000, 10000, 10100]
     restart_weights: [1, 0.5, 0.5, 0.25]
     eta_min: !!float 0
-#    type: MultiStepLR
-#    milestones: [300000]
-#    gamma: 1
 
   total_iter: 30000
 #  total_iter: 3000
 #  warmup_iter: -1  # no warm up
   warmup_iter: 100
 
-  # region_aware
-  region_aware:
-    k_size: 11
-    std: 0.025
-
   # losses
   pixel_opt:
     type: L1Loss
-    loss_weight: !!float 1e-2
-#    loss_weight: !!float 1.0
-    reduction: mean
-  artifacts_opt:
-    type: L1Loss
+#    loss_weight: !!float 1e-2
     loss_weight: !!float 1.0
     reduction: mean
-  back_projection_opt:
-    type: L1Loss
-    loss_weight: !!float 1e-2
-    reduction: mean
-  perceptual_opt:
-    type: PerceptualLoss
-    layer_weights:
-      # before relu
-      'conv1_2': 0.1
-      'conv2_2': 0.1
-      'conv3_4': 1
-      'conv4_4': 1
-      'conv5_4': 1
-    vgg_type: vgg19
-    use_input_norm: true
-    range_norm: false
-#    perceptual_weight: 1.0
-    perceptual_weight: !!float 2e-4
-#    perceptual_weight: !!float 5e-3
-    style_weight: 0
-    criterion: l1
-  gan_opt:
-    type: GANLoss
-    gan_type: vanilla
-    real_label_val: 1.0
-    fake_label_val: 0.0
-    loss_weight: !!float 1e-4
-
-  net_d_iters: 1
-  net_d_init_iters: 0
-  ema_decay: 0.999
 
 # validation settings
 val:
   val_freq: &freq !!float 5e3
-#  val_freq: &freq !!float 100
+#  val_freq: &freq !!float 10
   save_img: true
 
   metrics:
