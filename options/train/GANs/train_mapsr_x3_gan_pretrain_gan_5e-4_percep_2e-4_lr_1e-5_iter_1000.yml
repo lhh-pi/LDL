@@ -1,7 +1,7 @@
 # general settings
-name: train_mapsr_LDL_RA_BP_pretrain_gan_5e-3_percep_1e-2_lr_1e-4
+name: train_mapsr_x3_gan_pretrain_gan_5e-4_percep_2e-4_lr_1e-5_iter_1000
 model_type: SRGAN_LDL_RA_BP
-scale: &scale 2
+scale: &scale 3
 num_gpu: 1   # set num_gpu: 0 for cpu mode
 manual_seed: 0
 
@@ -14,13 +14,13 @@ datasets:
 #    dataroot_gt: datasets/map600/map_train_HR_sub
     dataroot_gt: datasets/map600/map_train_HR
 #    dataroot_lq: datasets/map600/map_train_LR_bicubic/X2_sub
-    dataroot_lq: datasets/map600/map_train_LR_bicubic/X2
+    dataroot_lq: datasets/map600/map_train_LR_bicubic/X3
     filename_tmpl: '{}'
     io_backend:
 #      type: lmdb
       type: disk
 
-    gt_size: &gt_size 96
+    gt_size: &gt_size 144
     use_flip: true
     use_rot: true
 
@@ -30,24 +30,15 @@ datasets:
     num_worker_per_gpu: 1
     batch_size_per_gpu: 2
 #    dataset_enlarge_ratio: 100  # 数据扩充
-    dataset_enlarge_ratio: 20  # 数据扩充
+    dataset_enlarge_ratio: 2  # 数据扩充
     prefetch_mode: ~
 
-#  val:
-#    name: DIV2K100
-#    type: PairedImageDataset
-##    dataroot_gt: datasets/DIV2K100/HR
-##    dataroot_lq: datasets/DIV2K100/LR
-#    dataroot_gt: datasets/DIV2K/DIV2K_valid_HR
-#    dataroot_lq: datasets/DIV2K/DIV2K_valid_LR_bicubic/X4
-#    io_backend:
-#      type: disk
 
   val:
     name: map10
     type: PairedImageDataset
     dataroot_gt: datasets/map600/map10/gt
-    dataroot_lq: datasets/map600/map10/X2
+    dataroot_lq: datasets/map600/map10/X3
     io_backend:
       type: disk
 
@@ -73,9 +64,9 @@ network_d:
 
 # path
 path:
-  pretrain_network_g: experiments/pretrained_models/net_g/mapsr_LDL_x2_pretrain.pth
+  pretrain_network_g: experiments/pretrained_models/net_g/mapsr_LDL_x3_pretrain.pth
 #  pretrain_network_g: ~
-  param_key_g: params_ema
+  param_key_g: params
   strict_load_g: true
   resume_state: ~
 
@@ -83,8 +74,8 @@ path:
 train:
   optim_g:
     type: Adam
-    lr: !!float 1e-4
-#    lr: !!float 1e-5
+#    lr: !!float 1e-4
+    lr: !!float 1e-5
     weight_decay: 0
     betas: [0.9, 0.99]
   optim_d:
@@ -95,22 +86,21 @@ train:
 
   scheduler:
     type: CosineAnnealingRestartLR
-    periods: [50000, 50000, 100000, 100000]
+    periods: [200, 200, 300, 400]
     restart_weights: [1, 0.5, 0.5, 0.25]
-    eta_min: !!float 1e-7
+    eta_min: !!float 0
 #    type: MultiStepLR
 #    milestones: [300000]
 #    gamma: 1
 
-  total_iter: 300000
-#  total_iter: 3000
+  total_iter: 1000
 #  warmup_iter: -1  # no warm up
   warmup_iter: 100
 
   # region_aware
-  region_aware:
-    k_size: 11
-    std: 0.025
+#  region_aware:
+#    k_size: 11
+#    std: 0.025
 
   # losses
   pixel_opt:
@@ -118,14 +108,14 @@ train:
     loss_weight: !!float 1e-2
 #    loss_weight: !!float 1.0
     reduction: mean
-  artifacts_opt:
-    type: L1Loss
-    loss_weight: !!float 1.0
-    reduction: mean
-  back_projection_opt:
-    type: L1Loss
-    loss_weight: !!float 1e-2
-    reduction: mean
+#  artifacts_opt:
+#    type: L1Loss
+#    loss_weight: !!float 1.0
+#    reduction: mean
+#  back_projection_opt:
+#    type: L1Loss
+#    loss_weight: !!float 1e-2
+#    reduction: mean
   perceptual_opt:
     type: PerceptualLoss
     layer_weights:
@@ -139,7 +129,7 @@ train:
     use_input_norm: true
     range_norm: false
 #    perceptual_weight: 1.0
-    perceptual_weight: !!float 1e-2
+    perceptual_weight: !!float 2e-4
 #    perceptual_weight: !!float 5e-3
     style_weight: 0
     criterion: l1
@@ -148,7 +138,7 @@ train:
     gan_type: vanilla
     real_label_val: 1.0
     fake_label_val: 0.0
-    loss_weight: !!float 5e-3
+    loss_weight: !!float 5e-4
 
   net_d_iters: 1
   net_d_init_iters: 0
@@ -156,8 +146,8 @@ train:
 
 # validation settings
 val:
-  val_freq: &freq !!float 5e3
-#  val_freq: &freq !!float 10
+#  val_freq: &freq !!float 5e3
+  val_freq: &freq !!float 200
   save_img: true
 
   metrics:

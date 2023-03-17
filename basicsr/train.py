@@ -178,7 +178,7 @@ def train_pipeline(root_path):
             if opt.get('val') is not None and (current_iter % opt['val']['val_freq'] == 0):
                 model.validation(val_loader, current_iter, tb_logger, opt['val']['save_img'])
                 if model.get_best_model():
-                    model.save(epoch, current_iter, best=True)
+                    model.save(epoch, 'best')
 
             # save models and training states
             if current_iter % opt['logger']['save_checkpoint_freq'] == 0:

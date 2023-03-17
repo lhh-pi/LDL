@@ -219,15 +219,7 @@ class SRModel(BaseModel):
             out_dict['gt'] = self.gt.detach().cpu()
         return out_dict
 
-    def save(self, epoch, current_iter, best=False):
-        if best:
-            save_filename = f'best_model_net_g.pth'
-            save_path = os.path.join(self.opt['path']['models'], save_filename)
-            if hasattr(self, 'net_g_ema'):
-                torch.save({'params': self.net_g, 'params_ema': self.net_g_ema}, save_path)
-            else:
-                torch.save({'params': self.net_g}, save_path)
-            return
+    def save(self, epoch, current_iter):
         if hasattr(self, 'net_g_ema'):
             self.save_network([self.net_g, self.net_g_ema], 'net_g', current_iter, param_key=['params', 'params_ema'])
         else:
