@@ -1,5 +1,5 @@
 # general settings
-name: train_mapsr_x3_gan_pretrain_gan_5e-4_percep_2e-4_lr_1e-5_iter_300000
+name: train_mapsr_x3_gan_ldl_bp_pretrain_gan_5e-4_percep_2e-4_lr_1e-5_iter_300000
 model_type: SRGAN_LDL_RA_BP
 scale: &scale 3
 num_gpu: 1   # set num_gpu: 0 for cpu mode
