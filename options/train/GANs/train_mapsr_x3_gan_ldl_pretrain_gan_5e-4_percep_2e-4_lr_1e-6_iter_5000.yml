@@ -98,7 +98,7 @@ train:
 #  warmup_iter: -1  # no warm up
   warmup_iter: 100
 
-   region_aware
+  # region_aware
   region_aware:
     k_size: 11
     std: 0.025
