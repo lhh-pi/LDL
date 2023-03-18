@@ -66,7 +66,7 @@ network_d:
 path:
   pretrain_network_g: experiments/pretrained_models/net_g/mapsr_LDL_x2_pretrain.pth
 #  pretrain_network_g: ~
-  param_key_g: params
+  param_key_g: params_ema
   strict_load_g: true
   resume_state: ~
 

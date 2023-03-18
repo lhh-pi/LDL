@@ -1,6 +1,6 @@
-name: test_mapsr_1.0_x3
+name: test_mapsr_x2_alpha_0.1
 model_type: BaseModel
-scale: &scale 3
+scale: &scale 2
 num_gpu: 1  # set num_gpu: 0 for cpu mode
 manual_seed: 0
 
@@ -9,7 +9,7 @@ datasets:
     name: map10
     type: PairedImageDataset
     dataroot_gt: datasets/map600/map10/gt
-    dataroot_lq: datasets/map600/map10/X3
+    dataroot_lq: datasets/map600/map10/X2
     io_backend:
       type: disk
 
@@ -23,12 +23,12 @@ network_g:
   num_heads: [6, 6, 6, 6, 6, 6]
   mlp_ratio: 2
   upsampler: 'pixelshuffle'
-  alpha: 1.0
+  alpha: 0.1
 
 
 # path
 path:
-  pretrain_network_g: experiments/train_mapsr_alpha_1.0_x3_lr_1e-5/models/net_g_latest.pth
+  pretrain_network_g: experiments/train_mapsr_x2_alpha_0.1_lr_1e-5/models/net_g_latest.pth
   param_key_g: params
   strict_load_g: true
 
