@@ -1,0 +1,49 @@
+name: test_rrdb_x2_gan_ldl
+model_type: BaseModel
+scale: &scale 2
+num_gpu: 1  # set num_gpu: 0 for cpu mode
+manual_seed: 0
+
+datasets:
+  test_1:
+    name: map10
+    type: PairedImageDataset
+    dataroot_gt: datasets/map600/map10/gt
+    dataroot_lq: datasets/map600/map10/X2
+    io_backend:
+      type: disk
+
+# network structures
+network_g:
+  type: RRDBNet
+  num_in_ch: 3
+  num_out_ch: 3
+  num_feat: 64
+  num_block: 23
+  scale: *scale
+
+
+# path
+path:
+  pretrain_network_g: experiments/train_rrdb_x2_gan_ldl_pretrain_gan_5e-3_percep_1.0_lr_1e-4_iter_300000/models/net_g_latest.pth
+  param_key_g: params_ema
+  strict_load_g: true
+
+# validation settings
+val:
+  save_img: true
+  suffix: ~  # add suffix to saved images, if None, use exp name
+
+  metrics:
+    psnr: # metric name, can be arbitrary
+      type: calculate_psnr
+      crop_border: *scale
+      test_y_channel: true
+    ssim:
+      type: calculate_ssim
+      crop_border: *scale
+      test_y_channel: true
+
+
+#PYTHONPATH="./:${PYTHONPATH}" CUDA_VISIBLE_DEVICES=0 python basicsr/test.py -opt options/test/LDL/test_LDL_Synthetic_x2.yml
+#PYTHONPATH="./:${PYTHONPATH}" OMP_NUM_THREADS=1 CUDA_VISIBLE_DEVICES=0 python basicsr/test.py -opt options/test/LDL/test_LDL_Synthetic_x2.yml
