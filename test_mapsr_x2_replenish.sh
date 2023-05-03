@@ -1,0 +1,1 @@
+python basicsr/test.py -opt options/test/Normal/test_mapsr_x2_replenish.yml
